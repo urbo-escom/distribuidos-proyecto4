@@ -6,6 +6,7 @@
 #include <pthread.h>
 
 #include "shfs.h"
+#include "file.h"
 
 
 int main(int argc, char **argv)
@@ -21,6 +22,7 @@ int main(int argc, char **argv)
 		perror("calloc");
 		return EXIT_FAILURE;
 	}
+	srand(time(NULL));
 
 	memset(fs, 0, sizeof(*fs));
 	if (argc < 6) {
@@ -36,7 +38,28 @@ int main(int argc, char **argv)
 	fs->group    = argv[4];
 	fs->port     = atoi(argv[5]);
 	fs->key      = 0xdeadbeef;
-	fs->id       = (uint32_t)time(NULL);
+	fs->id       = (uint32_t)rand();
+
+
+	if (!file_exists(fs->maindir) || !file_isdir(fs->maindir)) {
+		fprintf(stderr, "%s: is not a directory\n", fs->maindir);
+		free(fs);
+		return EXIT_FAILURE;
+	}
+
+
+	if (!file_exists(fs->trashdir) || !file_isdir(fs->trashdir)) {
+		fprintf(stderr, "%s: is not a directory\n", fs->trashdir);
+		free(fs);
+		return EXIT_FAILURE;
+	}
+
+
+	if (!file_exists(fs->tmpdir) || !file_isdir(fs->tmpdir)) {
+		fprintf(stderr, "%s: is not a directory\n", fs->tmpdir);
+		free(fs);
+		return EXIT_FAILURE;
+	}
 
 
 	socket_init();

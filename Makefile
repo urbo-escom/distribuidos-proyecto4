@@ -36,12 +36,16 @@ ${dstdir}/main${exe_suf}: ${dstdir}/libfnotify.a
 ${dstdir}/main${exe_suf}: ${dstdir}/libqueue.a
 ${dstdir}/main${exe_suf}: override LDFLAGS += -lpthread
 ${dstdir}/main${exe_suf}: override LDFLAGS += $(and ${SYSTEMROOT},-lws2_32)
-${dstdir}/main${exe_suf}: ${obj:%=${dstdir}/%}
+${dstdir}/main${exe_suf}: ${obj:%=${dstdir}/%} | ${dstdir}/
 	${CC} -o $@ $^ ${CFLAGS} ${LDFLAGS}
 
 
 ${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/socket
 ${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/fnotify
 ${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/queue
-${obj:%=${dstdir}/%}: ${dstdir}/%.o: ${srcdir}/%.c
+${obj:%=${dstdir}/%}: ${dstdir}/%.o: ${srcdir}/%.c | ${dstdir}/
 	${CC} -c -o $@ $< ${CFLAGS}
+
+
+%/:
+	$(if $(wildcard $@.),,mkdir $@)
