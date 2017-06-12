@@ -31,7 +31,7 @@ static void *utf8_to_wide(const char *utf8)
 	if (!len)
 		return NULL;
 
-	if ((str = malloc(len*sizeof(char))) == NULL)
+	if ((str = malloc(len*sizeof(*str))) == NULL)
 		return NULL;
 
 	len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, str, len);
@@ -57,7 +57,7 @@ static char *wide_to_utf8(const void *utf16)
 	if (!len)
 		return NULL;
 
-	if ((str = malloc(len*sizeof(char))) == NULL)
+	if ((str = malloc(len*sizeof(*str))) == NULL)
 		return NULL;
 
 	len = WideCharToMultiByte(CP_UTF8, 0, t, -1, str, len, NULL, NULL);
