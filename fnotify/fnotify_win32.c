@@ -166,20 +166,6 @@ static int isdir(fnotify *f, wchar_t *name)
 }
 
 
-static int isfile(fnotify *f, wchar_t *name)
-{
-	wchar_t fullname[8192];
-	DWORD attr;
-
-	wsprintfW(fullname, L"%hs/%ls", f->dirname, name);
-	attr = GetFileAttributesW(fullname);
-	if (INVALID_FILE_ATTRIBUTES == attr)
-		return 0;
-
-	return attr & FILE_ATTRIBUTE_NORMAL;
-}
-
-
 static void fixslash(char *s)
 {
 	char *t;

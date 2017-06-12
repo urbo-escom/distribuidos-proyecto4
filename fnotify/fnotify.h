@@ -1,8 +1,8 @@
 /*
  * cross-platform library for watching filesystem changes
  */
-#ifndef FNOTIFY
-#define FNOTIFY
+#ifndef FNOTIFY_H
+#define FNOTIFY_H
 
 
 typedef struct fnotify fnotify;
@@ -29,4 +29,4 @@ int      fnotify_wait(fnotify *f, struct fnotify_event *e);
 int      fnotify_close(fnotify*);
 
 
-#endif /* !FNOTIFY */
+#endif /* !FNOTIFY_H */
