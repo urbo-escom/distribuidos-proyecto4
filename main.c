@@ -11,6 +11,7 @@
 
 int main(int argc, char **argv)
 {
+	char kazaa_name[1024];
 	struct shfs *fs = NULL;
 	pthread_t thread_recv;
 	pthread_t thread_send;
@@ -25,8 +26,8 @@ int main(int argc, char **argv)
 	srand(time(NULL));
 
 	memset(fs, 0, sizeof(*fs));
-	if (argc < 6) {
-		fprintf(stderr, "usage: %s KAZAA_DIR TRASH_DIR TMP_DIR "
+	if (argc < 5) {
+		fprintf(stderr, "usage: %s KAZAA_DIR TRASH_DIR "
 				"GROUP PORT\n",
 			argv[0]);
 		free(fs);
@@ -34,9 +35,9 @@ int main(int argc, char **argv)
 	}
 	fs->maindir  = argv[1];
 	fs->trashdir = argv[2];
-	fs->tmpdir   = argv[3];
-	fs->group    = argv[4];
-	fs->port     = atoi(argv[5]);
+	fs->tmpdir   = (sprintf(kazaa_name, "%s.bak", argv[1]), kazaa_name);
+	fs->group    = argv[3];
+	fs->port     = atoi(argv[4]);
 	fs->key      = 0xdeadbeef;
 	fs->id       = (uint32_t)rand();
 
@@ -55,6 +56,7 @@ int main(int argc, char **argv)
 	}
 
 
+	file_mkdir(fs->tmpdir);
 	if (!file_exists(fs->tmpdir) || !file_isdir(fs->tmpdir)) {
 		fprintf(stderr, "%s: is not a directory\n", fs->tmpdir);
 		free(fs);
@@ -78,6 +80,13 @@ int main(int argc, char **argv)
 
 	fs->queue_send = queue_create(sizeof(struct shfs_file_op));
 	fs->queue_fs   = queue_create(sizeof(struct shfs_file_op));
+
+
+	fprintf(stderr, "KAZAA_DIR = \"%s\"\n", fs->maindir);
+	fprintf(stderr, "TRASH_DIR = \"%s\"\n", fs->trashdir);
+	fprintf(stderr, "TMP_DIR   = \"%s\"\n", fs->tmpdir);
+	fprintf(stderr, "GROUP     = \"%s\"\n", fs->group);
+	fprintf(stderr, "PORT      = %d\n", fs->port);
 
 
 	pthread_create(&thread_recv,    NULL, recv_thread,    fs);
