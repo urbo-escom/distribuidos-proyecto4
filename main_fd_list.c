@@ -51,13 +51,14 @@ int fd_list_write(struct shfs *fs, const char *name,
 {
 	size_t i;
 
-	fprintf(stderr, "writing to fdlist\n");
+	fprintf(stderr, "FD_LIST writing\n");
 	pthread_mutex_lock(&fs->fdlock);
 	for (i = 0; i < fs->fdlen; i++) {
 		if (0 != strcmp(fs->fdlist[i].name, name))
 			continue;
 		if (fs->fdlist[i].offset != offset) {
-			fprintf(stderr, "Rejecting offset %d\n", (int)offset);
+			fprintf(stderr, "FD_LIST Bad offset %d vs %d '%s'\n",
+				(int)offset, (int)fs->fdlist[i].offset, name);
 			continue;
 		}
 
@@ -67,15 +68,15 @@ int fd_list_write(struct shfs *fs, const char *name,
 		if (NULL != fs->fdlist[i].fd_main)
 			fwrite(buf, 1, len, fs->fdlist[i].fd_main);
 
-		fprintf(stderr, "FD_LIST offset+len %d+%d\n",
-			(int)offset, (int)len);
+		fprintf(stderr, "FD_LIST offset+len %d+%d '%s'\n",
+			(int)offset, (int)len, name);
 		fs->fdlist[i].offset += len;
 		fs->fdlist[i].lastrecv = time(NULL);
 		pthread_mutex_unlock(&fs->fdlock);
 		return 0;
 	}
 	pthread_mutex_unlock(&fs->fdlock);
-	fprintf(stderr, "finish writing to fdlist\n");
+	fprintf(stderr, "FD_LIST writing finish\n");
 	return 0;
 }
 

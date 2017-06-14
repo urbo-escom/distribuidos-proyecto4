@@ -131,7 +131,7 @@ void* send_thread(void *param)
 		socket_addr_get_port(fs->group_addr, &pport);
 		socket_addr_get_port(fs->self_addr, &sport);
 		fprintf(stderr,
-			"[%s:%d] -> [%s:%d] sent "
+			"SEND [%s:%d] -> [%s:%d] sent "
 			"(id, key) = (0x%x, 0x%x)\n",
 			shost, sport, phost, pport, m->id, m->key);
 	}

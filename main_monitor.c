@@ -33,12 +33,9 @@ void* monitor_thread(void *param)
 
 
 		case FNOTIFY_CREATE:
-			/*
-			printf("%s: notify create '%s' [%s]\n",
-				fs->maindir,
+			fprintf(stderr, "FNOTIFY create '%s' [%s]\n",
 				e.name,
 				(e.type & FNOTIFY_ISDIR) ? "dir":"file");
-			*/
 			if (e.type & FNOTIFY_ISDIR) {
 				op->type |= FILE_OP_BACKUP;
 				strcpy(op->name, e.name);
@@ -48,12 +45,9 @@ void* monitor_thread(void *param)
 
 
 		case FNOTIFY_WRITE:
-			/*
-			printf("%s: notify write  '%s' [%s]\n",
-				fs->maindir,
+			fprintf(stderr, "FNOTIFY write  '%s' [%s]\n",
 				e.name,
 				(e.type & FNOTIFY_ISDIR) ? "dir":"file");
-			*/
 			op->type |= FILE_OP_BACKUP;
 			strcpy(op->name, e.name);
 			queue_enqueue(fs->queue_fs, op);
@@ -61,11 +55,8 @@ void* monitor_thread(void *param)
 
 
 		case FNOTIFY_DELETE:
-			/*
-			printf("%s: notify delete '%s'\n",
-				fs->maindir,
+			fprintf(stderr, "FNOTIFY delete '%s'\n",
 				e.name);
-			*/
 			op->type |= FILE_OP_DELETE;
 			strcpy(op->name, e.name);
 			queue_enqueue(fs->queue_fs, op);
@@ -73,13 +64,10 @@ void* monitor_thread(void *param)
 
 
 		case FNOTIFY_RENAME:
-			/*
-			printf("%s: notify rename '%s' -> '%s' [%s]\n",
-				fs->maindir,
+			fprintf(stderr, "FNOTIFY rename '%s' -> '%s' [%s]\n",
 				e.name[0] ? e.name:"UNKNOWN",
 				e.toname[0] ? e.toname:"UNKNOWN",
 				(e.type & FNOTIFY_ISDIR) ? "dir":"file");
-			*/
 			if (!e.name[0] || !e.toname[0])
 				break;
 			op->type |= FILE_OP_RENAME;

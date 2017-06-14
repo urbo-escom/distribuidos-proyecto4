@@ -18,7 +18,7 @@ void fs_remote_read(struct shfs *fs, struct shfs_file_op *op)
 	FILE* fd;
 	size_t len;
 
-	fprintf(stderr, "REMOTE read %s [%s]\n",
+	fprintf(stderr, "FS REMOTE read '%s' [%s]\n",
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
@@ -52,7 +52,7 @@ void fs_remote_create(struct shfs *fs, struct shfs_file_op *op)
 	char main_fname[1024];
 	char trash_fname[1024];
 
-	fprintf(stderr, "REMOTE create %s [%s]\n",
+	fprintf(stderr, "FS REMOTE create '%s' [%s]\n",
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
@@ -73,11 +73,11 @@ void fs_remote_create(struct shfs *fs, struct shfs_file_op *op)
 
 void fs_remote_write(struct shfs *fs, struct shfs_file_op *op)
 {
-	fprintf(stderr, "REMOTE write %s %d+%d/%d [%s]\n",
-		op->name,
+	fprintf(stderr, "FS REMOTE write %d+%d/%d '%s' [%s]\n",
 		(int)op->offset,
 		(int)op->count,
 		(int)op->length,
+		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
 	if (op->type & FILE_OP_ISDIR)
@@ -98,7 +98,7 @@ void fs_remote_delete(struct shfs *fs, struct shfs_file_op *op)
 	char main_fname[1024];
 	char trash_fname[1024];
 
-	fprintf(stderr, "REMOTE delete %s [%s]\n",
+	fprintf(stderr, "FS REMOTE delete '%s' [%s]\n",
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
@@ -121,7 +121,7 @@ void fs_remote_rename(struct shfs *fs, struct shfs_file_op *op)
 	char old_maindir_fname[1024];
 	char new_maindir_fname[1024];
 
-	fprintf(stderr, "REMOTE rename %s -> %s [%s]\n",
+	fprintf(stderr, "FS REMOTE rename '%s' -> %s [%s]\n",
 		op->name,
 		op->toname,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
@@ -145,14 +145,14 @@ void fs_backup(struct shfs *fs, struct shfs_file_op *op)
 	char main_fname[1024];
 	char trash_fname[1024];
 
-	fprintf(stderr, "LOCAL backup %s [%s]\n",
+	fprintf(stderr, "FS LOCAL  backup '%s' [%s]\n",
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
 
 	if (fd_list_has(fs, op->name)) {
 		fd_list_remove(fs, op->name);
-		fprintf(stderr, "LOCAL write %s finish [%s]\n",
+		fprintf(stderr, "FS LOCAL  finish-write '%s' [%s]\n",
 			op->name,
 			op->type & FILE_OP_ISDIR ? "dir":"file"
 		);
@@ -179,7 +179,7 @@ void fs_delete(struct shfs *fs, struct shfs_file_op *op)
 	char tmp_fname[1024];
 	char trash_fname[1024];
 
-	fprintf(stderr, "LOCAL delete %s [%s]\n",
+	fprintf(stderr, "FS LOCAL  delete '%s' [%s]\n",
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
@@ -209,7 +209,7 @@ void fs_rename(struct shfs *fs, struct shfs_file_op *op)
 	char old_maindir_fname[1024];
 	char new_maindir_fname[1024];
 
-	fprintf(stderr, "LOCAL rename %s -> %s [%s]\n",
+	fprintf(stderr, "FS LOCAL  rename '%s' -> '%s' [%s]\n",
 		op->name,
 		op->toname,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
