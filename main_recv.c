@@ -8,26 +8,48 @@
 #include "shfs.h"
 
 
-static void process_message(struct shfs *fs, struct shfs_message *m)
+static void process_message(struct shfs *fs, struct shfs_message *m,
+		const char *phost, int pport)
 {
 	struct shfs_file_op op_alloc;
 	struct shfs_file_op *op = &op_alloc;
 
 	memset(op, 0, sizeof(*op));
 
-	if (m->opcode & MESSAGE_ISDIR)
+	if (m->type & MESSAGE_ISDIR)
 		op->type |= FILE_OP_ISDIR;
 
 
-	if (m->opcode & MESSAGE_CREATE) {
+	switch (m->opcode) {
+	case MESSAGE_PING:
+		m->opcode = MESSAGE_PONG;
+		printf("RECV [%s:%d] got ping\n",
+			phost, pport);
+		socket_sendto(fs->sock, m, sizeof(*m), fs->peer_addr);
+		return;
+
+
+	case MESSAGE_PONG:
+		printf("RECV [%s:%d] got pong\n",
+			phost, pport);
+		return;
+
+
+	case MESSAGE_READ:
+		op->type |= FILE_OP_REMOTE_READ;
+		strcpy(op->name, m->name);
+		queue_enqueue(fs->queue_fs, op);
+		return;
+
+
+	case MESSAGE_CREATE:
 		op->type |= FILE_OP_REMOTE_CREATE;
 		strcpy(op->name, m->name);
 		queue_enqueue(fs->queue_fs, op);
 		return;
-	}
 
 
-	if (m->opcode & MESSAGE_WRITE) {
+	case MESSAGE_WRITE:
 		op->type |= FILE_OP_REMOTE_WRITE;
 		strcpy(op->name, m->name);
 		op->count  = m->count;
@@ -38,29 +60,30 @@ static void process_message(struct shfs *fs, struct shfs_message *m)
 		memcpy(op->data, m->data, op->count);
 		queue_enqueue(fs->queue_fs, op);
 		return;
-	}
 
 
-	if (m->opcode & MESSAGE_DELETE) {
+	case MESSAGE_DELETE:
 		op->type |= FILE_OP_REMOTE_DELETE;
 		strcpy(op->name, m->name);
 		queue_enqueue(fs->queue_fs, op);
 		return;
-	}
 
 
-	if (m->opcode & MESSAGE_RENAME) {
-		char *t;
-		op->type |= FILE_OP_REMOTE_RENAME;
-		t = strchr(m->name, '|');
-		if (NULL == t)
+	case MESSAGE_RENAME:
+		{
+			char *t;
+			op->type |= FILE_OP_REMOTE_RENAME;
+			t = strchr(m->name, '|');
+			if (NULL == t)
+				return;
+			*t = '\0';
+			strcpy(op->name, m->name);
+			strcpy(op->toname, t + 1);
+			queue_enqueue(fs->queue_fs, op);
 			return;
-		*t = '\0';
-		strcpy(op->name, m->name);
-		strcpy(op->toname, t + 1);
-		queue_enqueue(fs->queue_fs, op);
-		return;
+		}
 	}
+
 }
 
 
@@ -137,25 +160,11 @@ void* recv_thread(void *param)
 		socket_addr_get_port(fs->peer_addr, &pport);
 		socket_addr_get_port(fs->self_addr, &sport);
 		fprintf(stderr,
-			"[%s:%d] <- [%s:%d] recv %d bytes "
+			"RECV [%s:%d] <- [%s:%d] recv %d bytes "
 			"(id, key) = (0x%x, 0x%x)\n",
 			shost, sport, phost, pport, s, m->id, m->key);
 
-
-		if (MESSAGE_PING == m->key) {
-			m->opcode = MESSAGE_PONG;
-			printf("[%s:%d] got ping\n",
-				phost, pport);
-			socket_sendto(fs->sock, m, s, fs->peer_addr);
-			continue;
-		}
-		if (MESSAGE_PONG == m->key) {
-			printf("[%s:%d] got pong\n",
-				phost, pport);
-			continue;
-		}
-
-		process_message(fs, m);
+		process_message(fs, m, phost, pport);
 	}
 
 	return NULL;
