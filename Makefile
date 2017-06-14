@@ -44,6 +44,8 @@ obj := ${src:%.c=${dstdir}/%.o}
 
 .PHONY: ${target}/all
 .PHONY: ${target}/clean
+.PHONY: ${target}/run
+.PHONY: ${target}/run-clean
 
 .DEFAULT_GOAL := ${target}/all
 ${target}/all: ${dstdir}/${program}
@@ -63,6 +65,14 @@ ${dstdir}/${program}: override LDFLAGS += -lpthread
 ${dstdir}/${program}: override LDFLAGS += $(and ${SYSTEMROOT},-lws2_32)
 ${dstdir}/${program}: ${obj} | ${dstdir}/
 	${CC} -o $@ $^ ${CFLAGS} ${LDFLAGS}
+
+${target}/run: run := $(abspath ${dstdir}/${program})
+${target}/run:
+	${run}
+
+${target}/run-clean: run := $(abspath ${dstdir}/${program})
+${target}/run-clean:
+	rm -rf ./kazaa ./kazaa.bak ./kazaa.trash && ${run}
 
 
 .INTERMEDIATE: ${obj}
