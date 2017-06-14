@@ -178,3 +178,34 @@ int fd_list_remove(struct shfs *fs, const char *name)
 	pthread_mutex_unlock(&fs->fdlock);
 	return 0;
 }
+
+
+int fd_list_request_next_offset(struct shfs *fs, const char *name)
+{
+	struct shfs_message m_alloc = {0};
+	struct shfs_message *m = &m_alloc;
+	size_t i;
+
+	pthread_mutex_lock(&fs->fdlock);
+	for (i = 0; i < fs->fdlen; i++) {
+		if (0 != strcmp(fs->fdlist[i].name, name))
+			continue;
+
+		fprintf(stderr, "FD_LIST next %d/%d '%s'\n",
+			(int)fs->fdlist[i].offset,
+			(int)fs->fdlist[i].length,
+			fs->fdlist[i].name);
+		memset(m, 0, sizeof(*m));
+		m->id = fs->id;
+		m->key = fs->key;
+		m->opcode = MESSAGE_READ;
+		m->offset = (uint32_t)fs->fdlist[i].offset;
+		strcpy(m->name, fs->fdlist[i].name);
+		socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
+
+		pthread_mutex_unlock(&fs->fdlock);
+		return 0;
+	}
+	pthread_mutex_unlock(&fs->fdlock);
+	return -1;
+}

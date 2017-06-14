@@ -76,6 +76,7 @@ void fs_remote_create(struct shfs *fs, struct shfs_file_op *op)
 		if (!file_exists(trash_fname)) file_mkdir(trash_fname);
 	} else {
 		fd_list_open(fs, op->name, op->length);
+		fd_list_request_next_offset(fs, op->name);
 	}
 }
 
@@ -100,6 +101,7 @@ void fs_remote_write(struct shfs *fs, struct shfs_file_op *op)
 	}
 
 	fd_list_write(fs, op->name, op->offset, op->data, op->count);
+	fd_list_request_next_offset(fs, op->name);
 }
 
 

@@ -118,3 +118,4 @@ extern int fd_list_write(struct shfs *fs, const char *name, size_t offset,
 extern int fd_list_close(struct shfs *fs, const char *name);
 extern int fd_list_has(struct shfs *fs, const char *name);
 extern int fd_list_remove(struct shfs *fs, const char *name);
+extern int fd_list_request_next_offset(struct shfs *fs, const char *name);
