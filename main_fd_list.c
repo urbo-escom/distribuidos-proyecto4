@@ -16,7 +16,7 @@ int fd_list_open(struct shfs *fs, const char *name, size_t length)
 	char main_fname[1024];
 	size_t i;
 
-	fprintf(stderr, "FD_LIST opening '%s'\n", name);
+	fprintf(stderr, "FD_LIST opening %d bytes '%s'\n", (int)length, name);
 	pthread_mutex_lock(&fs->fdlock);
 
 	if (fs->fdsize <= fs->fdlen) {
@@ -81,8 +81,13 @@ int fd_list_write(struct shfs *fs, const char *name,
 		if (0 != strcmp(fs->fdlist[i].name, name))
 			continue;
 		if (fs->fdlist[i].offset != offset) {
-			fprintf(stderr, "FD_LIST Bad offset %d vs %d '%s'\n",
+			fprintf(stderr, "FD_LIST Bad offset %d vs [%d]@'%s'\n",
 				(int)offset, (int)fs->fdlist[i].offset, name);
+			continue;
+		}
+		if (fs->fdlist[i].length <= offset) {
+			fprintf(stderr, "FD_LIST offset %d/%d overflow '%s'\n",
+				(int)offset, (int)fs->fdlist[i].length, name);
 			continue;
 		}
 
@@ -92,7 +97,7 @@ int fd_list_write(struct shfs *fs, const char *name,
 		if (NULL != fs->fdlist[i].fd_main)
 			fwrite(buf, 1, len, fs->fdlist[i].fd_main);
 
-		fprintf(stderr, "FD_LIST offset+len %d+%d '%s'\n",
+		fprintf(stderr, "FD_LIST offset+len %d += %d '%s'\n",
 			(int)offset, (int)len, name);
 		fs->fdlist[i].offset += len;
 		fs->fdlist[i].lastrecv = time(NULL);
@@ -114,9 +119,17 @@ int fd_list_close(struct shfs *fs, const char *name)
 	for (i = 0; i < fs->fdlen; i++) {
 		if (0 != strcmp(fs->fdlist[i].name, name))
 			continue;
-		fprintf(stderr, "FD_LIST closed '%s'\n", name);
-		fclose(fs->fdlist[i].fd_tmp);
-		fclose(fs->fdlist[i].fd_main);
+		fprintf(stderr, "FD_LIST closed '%s' at %d/%d bytes\n",
+			name,
+			(int)fs->fdlist[i].offset,
+			(int)fs->fdlist[i].length);
+
+		if (NULL != fs->fdlist[i].fd_tmp)
+			fclose(fs->fdlist[i].fd_tmp);
+
+		if (NULL != fs->fdlist[i].fd_main)
+			fclose(fs->fdlist[i].fd_main);
+
 		fs->fdlist[i].fd_tmp = NULL;
 		fs->fdlist[i].fd_main = NULL;
 		pthread_mutex_unlock(&fs->fdlock);

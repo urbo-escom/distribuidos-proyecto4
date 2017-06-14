@@ -67,11 +67,11 @@ ${dstdir}/${program}: ${obj} | ${dstdir}/
 	${CC} -o $@ $^ ${CFLAGS} ${LDFLAGS}
 
 ${target}/run: run := $(abspath ${dstdir}/${program})
-${target}/run:
+${target}/run: ${dstdir}/${program}
 	${run}
 
 ${target}/run-clean: run := $(abspath ${dstdir}/${program})
-${target}/run-clean:
+${target}/run-clean: ${dstdir}/${program}
 	rm -rf ./kazaa ./kazaa.bak ./kazaa.trash && ${run}
 
 

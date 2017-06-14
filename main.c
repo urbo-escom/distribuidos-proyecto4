@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 			fs->host ? fs->host:"0.0.0.0", fs->port);
 		exit(EXIT_FAILURE);
 	}
-	socket_recv_timeout_ms(fs->sock, 5000);
+	socket_recv_timeout_ms(fs->sock, 200);
 	socket_settimetolive(fs->sock, 10);
 
 	socket_addr_set_ip(fs->group_addr, fs->group);

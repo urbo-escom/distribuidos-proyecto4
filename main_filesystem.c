@@ -15,33 +15,41 @@ void fs_remote_read(struct shfs *fs, struct shfs_file_op *op)
 	struct shfs_message m_alloc = {0};
 	struct shfs_message *m = &m_alloc;
 	char tmp_fname[1024];
-	FILE* fd;
+	FILE* fd = NULL;
 	size_t len;
 
-	fprintf(stderr, "FS REMOTE read '%s' [%s]\n",
+	sprintf(tmp_fname, "%s/%s", fs->tmpdir, op->name);
+
+	fprintf(stderr, "FS REMOTE read %d/%d offset '%s' [%s]\n",
+		(int)op->offset,
+		(int)file_size(tmp_fname),
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
 	if (op->type & FILE_OP_ISDIR)
 		return;
 
-	sprintf(tmp_fname, "%s/%s", fs->tmpdir, op->name);
-	fd = fopen(tmp_fname, "rb");
-	if (NULL == fd) {
-		perror(tmp_fname);
-		return;
-	}
-	if (0 != fseek(fd, 0, op->offset)) {
-		perror(tmp_fname);
-		return;
-	}
-
 	m->id = fs->id;
 	m->key = fs->key;
 	m->opcode = MESSAGE_WRITE;
-	len = fread(m->data, 1, sizeof(m->data), fd);
-	m->count  = len;
+	m->type   = 0;
+	strcpy(m->name, op->name);
 	m->offset = op->offset;
+	m->count  = 0;
+	m->length = file_size(tmp_fname);
+
+	fd = fopen(tmp_fname, "rb");
+	if (NULL != fd && 0 == fseek(fd, op->offset, SEEK_SET)) {
+		len = fread(m->data, 1, sizeof(m->data), fd);
+		m->count  = len;
+	} else {
+		perror(tmp_fname);
+		if (NULL != fd)
+			fclose(fd);
+	}
+	if (NULL != fd)
+		fclose(fd);
+
 	socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
 }
 
@@ -52,7 +60,8 @@ void fs_remote_create(struct shfs *fs, struct shfs_file_op *op)
 	char main_fname[1024];
 	char trash_fname[1024];
 
-	fprintf(stderr, "FS REMOTE create '%s' [%s]\n",
+	fprintf(stderr, "FS REMOTE create %d bytes '%s' [%s]\n",
+		op->length,
 		op->name,
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
@@ -81,6 +90,8 @@ void fs_remote_write(struct shfs *fs, struct shfs_file_op *op)
 		op->type & FILE_OP_ISDIR ? "dir":"file"
 	);
 	if (op->type & FILE_OP_ISDIR)
+		return;
+	if (!fd_list_has(fs, op->name))
 		return;
 
 	if (op->length <= op->offset || !op->count) {
@@ -151,6 +162,7 @@ void fs_backup(struct shfs *fs, struct shfs_file_op *op)
 	);
 
 	if (fd_list_has(fs, op->name)) {
+		fd_list_close(fs, op->name);
 		fd_list_remove(fs, op->name);
 		fprintf(stderr, "FS LOCAL  finish-write '%s' [%s]\n",
 			op->name,

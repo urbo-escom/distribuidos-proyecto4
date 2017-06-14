@@ -9,57 +9,24 @@ void send_backup(struct shfs *fs, struct shfs_file_op *op,
 		struct shfs_message *m)
 {
 	char tmp_fname[1024];
-	size_t len;
-	FILE* fd;
 
 	sprintf(tmp_fname, "%s/%s", fs->tmpdir, op->name);
 
-	if (file_isdir(tmp_fname)) {
-		m->opcode = 0;
-		m->opcode |= MESSAGE_CREATE;
-		m->opcode |= MESSAGE_ISDIR;
-		strcpy(m->name, op->name);
-		socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
-		return;
-	}
-
 	m->opcode = MESSAGE_CREATE;
 	strcpy(m->name, op->name);
-	m->length = file_size(tmp_fname);
-	socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
-	
-
-	m->opcode = MESSAGE_WRITE;
-	strcpy(m->name, op->name);
-	m->offset = 0;
-	m->length = file_size(tmp_fname);
-	fd = fopen(tmp_fname, "rb");
-	if (NULL == fd) {
-		perror(op->name);
-		return;
-	}
-
-
-	if (!m->length) {
-		m->count = 0;
+	if (file_isdir(tmp_fname)) {
+		m->type   = MESSAGE_ISDIR;
+		m->length = 0;
+		fprintf(stderr, "SEND dir %d bytes '%s'\n",
+			(int)m->length, op->name);
 		socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
-		fclose(fd);
-		return;
-	}
-
-
-	while (1) {
-		len = fread(m->data, 1, sizeof(m->data), fd);
-		if (!len)
-			break;
-		m->count = len;
+	} else {
+		m->type   = 0;
+		m->length = file_size(tmp_fname);
+		fprintf(stderr, "SEND file %d bytes '%s'\n",
+			(int)m->length, op->name);
 		socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
-		m->offset += len;
 	}
-	m->count = 0;
-	socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
-
-	fclose(fd);
 }
 
 

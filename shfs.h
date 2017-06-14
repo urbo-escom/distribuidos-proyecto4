@@ -27,13 +27,13 @@ enum shfs_message_type {
 
 
 enum shfs_message_opcode {
-	MESSAGE_PING   = 0,
-	MESSAGE_PONG,
-	MESSAGE_READ,
-	MESSAGE_CREATE,
-	MESSAGE_WRITE,
-	MESSAGE_DELETE,
-	MESSAGE_RENAME
+	MESSAGE_PING   = 0x00,
+	MESSAGE_PONG   = 0x01,
+	MESSAGE_READ   = 0x02,
+	MESSAGE_CREATE = 0x03,
+	MESSAGE_WRITE  = 0x04,
+	MESSAGE_DELETE = 0x05,
+	MESSAGE_RENAME = 0x06
 };
 
 
@@ -71,6 +71,8 @@ struct shfs_file_op {
 	char                   name[MAX_NAME];
 	char                   toname[MAX_NAME];
 	char                   data[MAX_BUFFER];
+	char                   host[46];
+	int                    port;
 };
 
 

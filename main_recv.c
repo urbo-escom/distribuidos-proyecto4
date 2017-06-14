@@ -15,6 +15,8 @@ static void process_message(struct shfs *fs, struct shfs_message *m,
 	struct shfs_file_op *op = &op_alloc;
 
 	memset(op, 0, sizeof(*op));
+	strcpy(op->host, phost);
+	op->port = pport;
 
 	if (m->type & MESSAGE_ISDIR)
 		op->type |= FILE_OP_ISDIR;
@@ -38,6 +40,8 @@ static void process_message(struct shfs *fs, struct shfs_message *m,
 	case MESSAGE_READ:
 		op->type |= FILE_OP_REMOTE_READ;
 		strcpy(op->name, m->name);
+		op->offset = m->offset;
+		op->length = m->length;
 		queue_enqueue(fs->queue_fs, op);
 		return;
 
@@ -45,6 +49,7 @@ static void process_message(struct shfs *fs, struct shfs_message *m,
 	case MESSAGE_CREATE:
 		op->type |= FILE_OP_REMOTE_CREATE;
 		strcpy(op->name, m->name);
+		op->length = m->length;
 		queue_enqueue(fs->queue_fs, op);
 		return;
 
@@ -96,15 +101,17 @@ void fd_request_timeouted(struct shfs *fs)
 	fprintf(stderr, "searching timeouts in %d files\n", (int)fs->fdlen);
 	pthread_mutex_lock(&fs->fdlock);
 	for (i = 0; i < fs->fdlen; i++) {
-		/*
 		int now;
 		int last;
 			now = time(NULL);
 			last = fs->fdlist[i].lastrecv;
-			fprintf(stderr, "resending offset %d %s\n",
+		fprintf(stderr, "last '%s', now = %d, last = %d\n",
+			fs->fdlist[i].name, now, last);
+		if (1 < (now - last)) {
+			fprintf(stderr, "resending offset %d/%d '%s'\n",
 				(int)fs->fdlist[i].offset,
+				(int)fs->fdlist[i].length,
 				fs->fdlist[i].name);
-		*/
 			memset(m, 0, sizeof(*m));
 			m->id = fs->id;
 			m->key = fs->key;
@@ -112,6 +119,7 @@ void fd_request_timeouted(struct shfs *fs)
 			m->offset = (uint32_t)fs->fdlist[i].offset;
 			strcpy(m->name, fs->fdlist[i].name);
 			socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
+		}
 	}
 	pthread_mutex_unlock(&fs->fdlock);
 }
