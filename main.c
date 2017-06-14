@@ -39,6 +39,9 @@ void print_help(struct shfs *fs)
 	fprintf(stderr, "\t--help\n");
 	fprintf(stderr, "\t\tPrint this help\n\n");
 
+	fprintf(stderr, "\t--clean\n");
+	fprintf(stderr, "\t\tClean all directories before starting\n\n");
+
 	fprintf(stderr, "\t--kazaa DIR\n");
 	fprintf(stderr, "\t\tSet DIR as KAZAA_DIR\n\n");
 
@@ -78,6 +81,11 @@ int parse_args(struct shfs *fs, int argc, char **argv)
 	for (i = 0; i < argc; i++) {
 		if (0 == strcmp("--help", argv[i])) {
 			can_exit = 1;
+			continue;
+		}
+
+		if (0 == strcmp("--clean", argv[i])) {
+			fs->clean = 1;
 			continue;
 		}
 
@@ -244,6 +252,12 @@ int main(int argc, char **argv)
 		progname = strrchr(progname, '/') + 1;
 	parse_args(fs, argc - 1, argv + 1);
 
+
+	if (fs->clean) {
+		if (file_exists(fs->tmpdir)) file_rm(fs->tmpdir);
+		if (file_exists(fs->maindir)) file_rm(fs->maindir);
+		if (file_exists(fs->trashdir)) file_rm(fs->trashdir);
+	}
 
 	if (!file_isdir(fs->tmpdir)) file_mkdir(fs->tmpdir);
 	if (!file_isdir(fs->maindir)) file_mkdir(fs->maindir);

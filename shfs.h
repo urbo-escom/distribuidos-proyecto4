@@ -81,6 +81,7 @@ struct shfs {
 	const char  *maindir;
 	const char  *trashdir;
 	const char  *tmpdir;
+	int          clean;
 
 	const char  *host;
 	const char  *group;
