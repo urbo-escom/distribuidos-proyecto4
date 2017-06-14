@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <pthread.h>
 
 #include "socket.h"
 #include "fnotify.h"
@@ -20,6 +21,7 @@ extern void* fs_thread(void*);
 
 
 enum shfs_message_opcode {
+	MESSAGE_READ   = 0x00,
 	MESSAGE_CREATE = 0x01,
 	MESSAGE_WRITE  = 0x02,
 	MESSAGE_DELETE = 0x04,
@@ -43,6 +45,7 @@ struct shfs_message {
 
 
 enum shfs_file_op_type {
+	FILE_OP_REMOTE_READ   = 0x00,
 	FILE_OP_REMOTE_CREATE = 0x01,
 	FILE_OP_REMOTE_WRITE  = 0x02,
 	FILE_OP_REMOTE_DELETE = 0x04,
@@ -87,9 +90,13 @@ struct shfs {
 	queue       *queue_fs;
 
 	struct {
-		FILE *fd_tmp;
-		FILE *fd_main;
-		char  name[1024];
-	}            fdlist[1024];
-	size_t       fdlen;
+		FILE   *fd_tmp;
+		FILE   *fd_main;
+		size_t  offset;
+		size_t  length;
+		int     lastrecv;
+		char    name[1024];
+	}                fdlist[1024];
+	size_t           fdlen;
+	pthread_mutex_t  fdlock;
 };

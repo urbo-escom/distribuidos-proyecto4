@@ -5,15 +5,11 @@ srcdir ?= ${self}
 exe_suf ?= $(and ${SYSTEMROOT},.exe)
 
 
-lib := libqueue.a
+lib := libfile.a
 
 src :=
-src += queue.c
+src += file.c
 obj := ${src:%.c=${dstdir}/%.o}
-
-tst :=
-tst += test_queue.c
-tstexe := ${tst:%.c=${dstdir}/%${exe_suf}}
 
 
 .PHONY: ${target}/lib
@@ -21,7 +17,6 @@ tstexe := ${tst:%.c=${dstdir}/%${exe_suf}}
 
 
 ${target}/lib: ${dstdir}/${lib}
-${target}/test: ${tstexe}
 
 
 ${dstdir}/${lib}: ${obj}
@@ -32,8 +27,3 @@ ${dstdir}/${lib}: ${obj}
 ${obj}: ${dstdir}/%.o: ${srcdir}/%.c
 	${CC} -c -o $@ $< ${CFLAGS}
 
-
-${tstexe}: override LDFLAGS += -lpthread
-${tstexe}: ${dstdir}/%${exe_suf}: \
-		${srcdir}/%.c ${dstdir}/${lib}
-	${CC} -o $@ $^ ${CFLAGS} ${LDFLAGS}

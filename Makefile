@@ -1,21 +1,35 @@
 root := $(patsubst %/,%,$(dir $(lastword ${MAKEFILE_LIST})))
 target ?= .
 srcdir ?= ${root}
-dstdir ?= $(or $(and ${SYSTEMROOT},win32),linux)
+dstdir ?= .
 exe_suf ?= $(and ${SYSTEMROOT},.exe)
+program ?= kazaa-fs${exe_suf}
 
 
-inc = \
-	$(foreach target, $1, \
-	$(foreach srcdir, $1, \
-		$(eval include ${root}/${target}/Makefile) \
-	) \
-	)
+.SUFFIXES:
+.DELETE_ON_ERROR:
 
 
-$(call inc, fnotify)
-$(call inc, queue)
-$(call inc, socket)
+target := file
+srcdir := ${root}/${target}
+include ${root}/${target}/Makefile
+
+target := fnotify
+srcdir := ${root}/${target}
+include ${root}/${target}/Makefile
+
+target := queue
+srcdir := ${root}/${target}
+include ${root}/${target}/Makefile
+
+target := socket
+srcdir := ${root}/${target}
+include ${root}/${target}/Makefile
+
+
+target := .
+srcdir := ${root}
+dstdir := .
 
 
 src :=
@@ -24,26 +38,38 @@ src += main_send.c
 src += main_recv.c
 src += main_monitor.c
 src += main_fs.c
-src += file.c
-obj := ${src:%.c=%.o}
+obj := ${src:%.c=${dstdir}/%.o}
 
 
 .PHONY: ${target}/all
+.PHONY: ${target}/clean
+
 .DEFAULT_GOAL := ${target}/all
-${target}/all: ${dstdir}/main${exe_suf}
-${dstdir}/main${exe_suf}: ${dstdir}/libsocket.a
-${dstdir}/main${exe_suf}: ${dstdir}/libfnotify.a
-${dstdir}/main${exe_suf}: ${dstdir}/libqueue.a
-${dstdir}/main${exe_suf}: override LDFLAGS += -lpthread
-${dstdir}/main${exe_suf}: override LDFLAGS += $(and ${SYSTEMROOT},-lws2_32)
-${dstdir}/main${exe_suf}: ${obj:%=${dstdir}/%} | ${dstdir}/
+${target}/all: ${dstdir}/${program}
+${target}/clean: dstdir := ${dstdir}
+${target}/clean: program := ${program}
+${target}/clean::
+	rm -rf ${dstdir}/${program}
+	rm -rf ${dstdir}/*.o
+	rm -rf ${dstdir}/*.a
+	rm -rf ${dstdir}/*.exe
+
+${dstdir}/${program}: ${dstdir}/libfile.a
+${dstdir}/${program}: ${dstdir}/libfnotify.a
+${dstdir}/${program}: ${dstdir}/libqueue.a
+${dstdir}/${program}: ${dstdir}/libsocket.a
+${dstdir}/${program}: override LDFLAGS += -lpthread
+${dstdir}/${program}: override LDFLAGS += $(and ${SYSTEMROOT},-lws2_32)
+${dstdir}/${program}: ${obj} | ${dstdir}/
 	${CC} -o $@ $^ ${CFLAGS} ${LDFLAGS}
 
 
-${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/socket
-${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/fnotify
-${obj:%=${dstdir}/%}: override CFLAGS += -I${srcdir}/queue
-${obj:%=${dstdir}/%}: ${dstdir}/%.o: ${srcdir}/%.c | ${dstdir}/
+.INTERMEDIATE: ${obj}
+${obj}: override CFLAGS += -I${srcdir}/file
+${obj}: override CFLAGS += -I${srcdir}/fnotify
+${obj}: override CFLAGS += -I${srcdir}/queue
+${obj}: override CFLAGS += -I${srcdir}/socket
+${obj}: ${dstdir}/%.o: ${srcdir}/%.c | ${dstdir}/
 	${CC} -c -o $@ $< ${CFLAGS}
 
 

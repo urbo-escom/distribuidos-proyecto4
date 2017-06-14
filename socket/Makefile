@@ -13,7 +13,7 @@ src += socket_creation.c
 src += socket_init.c
 src += socket_options.c
 src += socket_send_recv.c
-obj := ${src:%.c=%.o}
+obj := ${src:%.c=${dstdir}/%.o}
 
 tst :=
 tst += test_unicast_listener.c
@@ -31,11 +31,12 @@ ${target}/lib: ${dstdir}/${lib}
 ${target}/test: ${tstexe}
 
 
-${dstdir}/${lib}: ${obj:%=${dstdir}/%}
+${dstdir}/${lib}: ${obj}
 	${AR} rcs $@ $(or $?, $^)
 
 
-${obj:%=${dstdir}/%}: ${dstdir}/%.o: ${srcdir}/%.c
+.INTERMEDIATE: ${obj}
+${obj}: ${dstdir}/%.o: ${srcdir}/%.c
 	${CC} -c -o $@ $< ${CFLAGS}
 
 

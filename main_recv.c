@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include <time.h>
 
 #include "shfs.h"
 
@@ -62,6 +64,36 @@ static void process_message(struct shfs *fs, struct shfs_message *m)
 }
 
 
+void fd_request_timeouted(struct shfs *fs)
+{
+	struct shfs_message m_alloc = {0};
+	struct shfs_message *m = &m_alloc;
+	size_t i;
+
+	fprintf(stderr, "searching timeouts in %d files\n", (int)fs->fdlen);
+	pthread_mutex_lock(&fs->fdlock);
+	for (i = 0; i < fs->fdlen; i++) {
+		/*
+		int now;
+		int last;
+			now = time(NULL);
+			last = fs->fdlist[i].lastrecv;
+			fprintf(stderr, "resending offset %d %s\n",
+				(int)fs->fdlist[i].offset,
+				fs->fdlist[i].name);
+		*/
+			memset(m, 0, sizeof(*m));
+			m->id = fs->id;
+			m->key = fs->key;
+			m->opcode = MESSAGE_READ;
+			m->offset = (uint32_t)fs->fdlist[i].offset;
+			strcpy(m->name, fs->fdlist[i].name);
+			socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
+	}
+	pthread_mutex_unlock(&fs->fdlock);
+}
+
+
 void* recv_thread(void *param)
 {
 	struct shfs *fs = param;
@@ -76,6 +108,10 @@ void* recv_thread(void *param)
 		int s;
 
 		s = socket_recvfrom(fs->sock, m, sizeof(*m), fs->peer_addr);
+		if (-1 == s && EAGAIN == errno) {
+			fd_request_timeouted(fs);
+			continue;
+		}
 		if (s <= 0)
 			continue;
 
@@ -107,7 +143,9 @@ void* recv_thread(void *param)
 
 
 		if (MESSAGE_PING == m->key) {
-			m->key = MESSAGE_PONG;
+			m->opcode = MESSAGE_PONG;
+			printf("[%s:%d] got ping\n",
+				phost, pport);
 			socket_sendto(fs->sock, m, s, fs->peer_addr);
 			continue;
 		}

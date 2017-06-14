@@ -28,10 +28,24 @@ int main(int argc, char **argv)
 	memset(fs, 0, sizeof(*fs));
 	if (argc < 5) {
 		fprintf(stderr, "usage: %s KAZAA_DIR TRASH_DIR "
-				"GROUP PORT\n",
+				"GROUP PORT [OPTIONS]...\n",
 			argv[0]);
 		free(fs);
 		return EXIT_FAILURE;
+	}
+	{
+		int i;
+		for (i = 5; i < argc; i++) {
+			if (0 == strcmp("--host", argv[i])) {
+				if (NULL == argv[i + 1]) {
+					free(fs);
+					fprintf(stderr, "Missing host arg\n");
+					return EXIT_FAILURE;
+				}
+				fs->host = argv[i + 1];
+				i++;
+			}
+		}
 	}
 	fs->maindir  = argv[1];
 	fs->trashdir = argv[2];
@@ -73,6 +87,8 @@ int main(int argc, char **argv)
 	socket_addr_set_ip(fs->group_addr, fs->group);
 	socket_addr_set_port(fs->group_addr, fs->port);
 	socket_group_join(fs->sock, fs->group_addr);
+	socket_recv_timeout_ms(fs->sock, 5000);
+	socket_settimetolive(fs->sock, 10);
 
 
 	fs->monitor = fnotify_open(fs->maindir);
@@ -80,6 +96,9 @@ int main(int argc, char **argv)
 
 	fs->queue_send = queue_create(sizeof(struct shfs_file_op));
 	fs->queue_fs   = queue_create(sizeof(struct shfs_file_op));
+
+
+	pthread_mutex_init(&fs->fdlock, NULL);
 
 
 	fprintf(stderr, "KAZAA_DIR = \"%s\"\n", fs->maindir);

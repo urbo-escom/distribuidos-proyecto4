@@ -26,6 +26,7 @@ void send_backup(struct shfs *fs, struct shfs_file_op *op,
 
 	m->opcode = MESSAGE_CREATE;
 	strcpy(m->name, op->name);
+	m->length = file_size(tmp_fname);
 	socket_sendto(fs->sock, m, sizeof(*m), fs->group_addr);
 	
 
