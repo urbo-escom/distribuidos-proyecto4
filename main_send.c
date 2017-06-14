@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "shfs.h"
-#include "file.h"
 
 
 void send_backup(struct shfs *fs, struct shfs_file_op *op,

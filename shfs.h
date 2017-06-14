@@ -4,6 +4,7 @@
 #include "socket.h"
 #include "fnotify.h"
 #include "queue.h"
+#include "file.h"
 
 #ifndef MAX_NAME
 #define MAX_NAME 512
@@ -20,21 +21,26 @@ extern void* monitor_thread(void*);
 extern void* fs_thread(void*);
 
 
+enum shfs_message_type {
+	MESSAGE_ISDIR = 0x01
+};
+
+
 enum shfs_message_opcode {
-	MESSAGE_READ   = 0x00,
-	MESSAGE_CREATE = 0x01,
-	MESSAGE_WRITE  = 0x02,
-	MESSAGE_DELETE = 0x04,
-	MESSAGE_RENAME = 0x08,
-	MESSAGE_ISDIR  = 0x10,
-	MESSAGE_PING   = 0xfe,
-	MESSAGE_PONG   = 0xff
+	MESSAGE_PING   = 0,
+	MESSAGE_PONG,
+	MESSAGE_READ,
+	MESSAGE_CREATE,
+	MESSAGE_WRITE,
+	MESSAGE_DELETE,
+	MESSAGE_RENAME
 };
 
 
 struct shfs_message {
 	uint32_t id;
 	uint32_t key;
+	uint32_t type;
 	uint32_t opcode;
 	uint32_t count;
 	uint32_t offset;
@@ -45,15 +51,15 @@ struct shfs_message {
 
 
 enum shfs_file_op_type {
-	FILE_OP_REMOTE_READ   = 0x00,
-	FILE_OP_REMOTE_CREATE = 0x01,
-	FILE_OP_REMOTE_WRITE  = 0x02,
-	FILE_OP_REMOTE_DELETE = 0x04,
-	FILE_OP_REMOTE_RENAME = 0x08,
-	FILE_OP_BACKUP        = 0x10,
-	FILE_OP_DELETE        = 0x20,
-	FILE_OP_RENAME        = 0x40,
-	FILE_OP_ISDIR         = 0x80
+	FILE_OP_REMOTE_READ   = 0x001,
+	FILE_OP_REMOTE_CREATE = 0x002,
+	FILE_OP_REMOTE_WRITE  = 0x004,
+	FILE_OP_REMOTE_DELETE = 0x008,
+	FILE_OP_REMOTE_RENAME = 0x010,
+	FILE_OP_BACKUP        = 0x020,
+	FILE_OP_DELETE        = 0x040,
+	FILE_OP_RENAME        = 0x080,
+	FILE_OP_ISDIR         = 0x100
 };
 
 
@@ -69,8 +75,8 @@ struct shfs_file_op {
 
 
 struct shfs {
-	uint32_t     id;
-	uint32_t     key;
+	uint32_t     id;  /* per-client *unique* id */
+	uint32_t     key; /* per-app    *unique* id */
 
 	const char  *maindir;
 	const char  *trashdir;
@@ -96,7 +102,16 @@ struct shfs {
 		size_t  length;
 		int     lastrecv;
 		char    name[1024];
-	}                fdlist[1024];
-	size_t           fdlen;
-	pthread_mutex_t  fdlock;
+	}                *fdlist;
+	size_t            fdsize;
+	size_t            fdlen;
+	pthread_mutex_t   fdlock;
 };
+
+
+extern int fd_list_open(struct shfs *fs, const char *name, size_t length);
+extern int fd_list_write(struct shfs *fs, const char *name, size_t offset,
+		const void *buf, size_t len);
+extern int fd_list_close(struct shfs *fs, const char *name);
+extern int fd_list_has(struct shfs *fs, const char *name);
+extern int fd_list_remove(struct shfs *fs, const char *name);

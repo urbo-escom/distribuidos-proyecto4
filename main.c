@@ -6,7 +6,11 @@
 #include <pthread.h>
 
 #include "shfs.h"
-#include "file.h"
+
+
+#ifndef FD_LIST_SIZE
+#define FD_LIST_SIZE (1024)
+#endif
 
 
 int main(int argc, char **argv)
@@ -18,19 +22,28 @@ int main(int argc, char **argv)
 	pthread_t thread_monitor;
 	pthread_t thread_fs;
 
+
 	fs = calloc(1, sizeof(*fs));
 	if (NULL == fs) {
 		perror("calloc");
 		return EXIT_FAILURE;
 	}
-	srand(time(NULL));
 
-	memset(fs, 0, sizeof(*fs));
+	fs->fdlist = calloc(FD_LIST_SIZE, sizeof(*fs->fdlist));
+	if (NULL == fs->fdlist) {
+		perror("calloc");
+		return EXIT_FAILURE;
+	}
+	fs->fdsize = FD_LIST_SIZE;
+	fs->fdlen  = 0;
+	pthread_mutex_init(&fs->fdlock, NULL);
+
+
+	srand(time(NULL));
 	if (argc < 5) {
 		fprintf(stderr, "usage: %s KAZAA_DIR TRASH_DIR "
 				"GROUP PORT [OPTIONS]...\n",
 			argv[0]);
-		free(fs);
 		return EXIT_FAILURE;
 	}
 	{
@@ -38,7 +51,6 @@ int main(int argc, char **argv)
 		for (i = 5; i < argc; i++) {
 			if (0 == strcmp("--host", argv[i])) {
 				if (NULL == argv[i + 1]) {
-					free(fs);
 					fprintf(stderr, "Missing host arg\n");
 					return EXIT_FAILURE;
 				}
@@ -58,14 +70,12 @@ int main(int argc, char **argv)
 
 	if (!file_exists(fs->maindir) || !file_isdir(fs->maindir)) {
 		fprintf(stderr, "%s: is not a directory\n", fs->maindir);
-		free(fs);
 		return EXIT_FAILURE;
 	}
 
 
 	if (!file_exists(fs->trashdir) || !file_isdir(fs->trashdir)) {
 		fprintf(stderr, "%s: is not a directory\n", fs->trashdir);
-		free(fs);
 		return EXIT_FAILURE;
 	}
 
@@ -73,7 +83,6 @@ int main(int argc, char **argv)
 	file_mkdir(fs->tmpdir);
 	if (!file_exists(fs->tmpdir) || !file_isdir(fs->tmpdir)) {
 		fprintf(stderr, "%s: is not a directory\n", fs->tmpdir);
-		free(fs);
 		return EXIT_FAILURE;
 	}
 
@@ -96,9 +105,6 @@ int main(int argc, char **argv)
 
 	fs->queue_send = queue_create(sizeof(struct shfs_file_op));
 	fs->queue_fs   = queue_create(sizeof(struct shfs_file_op));
-
-
-	pthread_mutex_init(&fs->fdlock, NULL);
 
 
 	fprintf(stderr, "KAZAA_DIR = \"%s\"\n", fs->maindir);

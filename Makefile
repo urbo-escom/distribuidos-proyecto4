@@ -34,10 +34,11 @@ dstdir := .
 
 src :=
 src += main.c
-src += main_send.c
-src += main_recv.c
+src += main_fd_list.c
+src += main_filesystem.c
 src += main_monitor.c
-src += main_fs.c
+src += main_recv.c
+src += main_send.c
 obj := ${src:%.c=${dstdir}/%.o}
 
 
@@ -69,7 +70,7 @@ ${obj}: override CFLAGS += -I${srcdir}/file
 ${obj}: override CFLAGS += -I${srcdir}/fnotify
 ${obj}: override CFLAGS += -I${srcdir}/queue
 ${obj}: override CFLAGS += -I${srcdir}/socket
-${obj}: ${dstdir}/%.o: ${srcdir}/%.c | ${dstdir}/
+${obj}: ${dstdir}/%.o: ${srcdir}/%.c ${srcdir}/shfs.h | ${dstdir}/
 	${CC} -c -o $@ $< ${CFLAGS}
 
 
