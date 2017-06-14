@@ -16,6 +16,7 @@ int fd_list_open(struct shfs *fs, const char *name, size_t length)
 	char main_fname[1024];
 	size_t i;
 
+	fprintf(stderr, "FD_LIST opening '%s'\n", name);
 	pthread_mutex_lock(&fs->fdlock);
 
 	if (fs->fdsize <= fs->fdlen) {
@@ -29,16 +30,39 @@ int fd_list_open(struct shfs *fs, const char *name, size_t length)
 
 	for (i = 0; i < fs->fdlen; i++)
 		if (0 == strcmp(fs->fdlist[i].name, name)) {
+			fprintf(stderr, "FD_LIST already open '%s'\n", name);
 			pthread_mutex_unlock(&fs->fdlock);
 			return -1;
 		}
 
+	memset(&fs->fdlist[i], 0, sizeof(fs->fdlist[i]));
 	strcpy(fs->fdlist[i].name, name);
-	fs->fdlist[i].fd_tmp = fopen(tmp_fname, "wb");
-	fs->fdlist[i].fd_main = fopen(main_fname, "wb");
 	fs->fdlist[i].offset = 0;
 	fs->fdlist[i].length = length;
 	fs->fdlist[i].lastrecv = time(NULL);
+
+	fs->fdlist[i].fd_tmp = fopen(tmp_fname, "wb");
+	if (NULL == fs->fdlist[i].fd_tmp) {
+		fprintf(stderr, "FD_LIST could not open '%s'\n", tmp_fname);
+		if (NULL != fs->fdlist[i].fd_tmp)
+			fclose(fs->fdlist[i].fd_tmp);
+		if (NULL != fs->fdlist[i].fd_main)
+			fclose(fs->fdlist[i].fd_main);
+		pthread_mutex_unlock(&fs->fdlock);
+		return -1;
+	}
+
+	fs->fdlist[i].fd_main = fopen(main_fname, "wb");
+	if (NULL == fs->fdlist[i].fd_main) {
+		fprintf(stderr, "FD_LIST could not open '%s'\n", main_fname);
+		if (NULL != fs->fdlist[i].fd_tmp)
+			fclose(fs->fdlist[i].fd_tmp);
+		if (NULL != fs->fdlist[i].fd_main)
+			fclose(fs->fdlist[i].fd_main);
+		pthread_mutex_unlock(&fs->fdlock);
+		return -1;
+	}
+
 	fs->fdlen++;
 
 	pthread_mutex_unlock(&fs->fdlock);
@@ -85,10 +109,12 @@ int fd_list_close(struct shfs *fs, const char *name)
 {
 	size_t i;
 
+	fprintf(stderr, "FD_LIST closing '%s'\n", name);
 	pthread_mutex_lock(&fs->fdlock);
 	for (i = 0; i < fs->fdlen; i++) {
 		if (0 != strcmp(fs->fdlist[i].name, name))
 			continue;
+		fprintf(stderr, "FD_LIST closed '%s'\n", name);
 		fclose(fs->fdlist[i].fd_tmp);
 		fclose(fs->fdlist[i].fd_main);
 		fs->fdlist[i].fd_tmp = NULL;
@@ -122,6 +148,7 @@ int fd_list_remove(struct shfs *fs, const char *name)
 	size_t i;
 	size_t j;
 
+	fprintf(stderr, "FD_LIST removing '%s'\n", name);
 	pthread_mutex_lock(&fs->fdlock);
 	for (i = j = 0; i < fs->fdlen; i++) {
 		if (0 != strcmp(fs->fdlist[i].name, name)) {
