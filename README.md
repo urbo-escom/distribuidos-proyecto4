@@ -9,14 +9,14 @@ compilar y correr
 	...
 	...
 	$ # en windows (Cygwin o MSYS2)
-	$ ./win32/main.exe <kazaa-dir> <trash-dir> <tmp-dir> <group> <port>
+	$ ./kazaa-fs.exe --help
+	...
+	$ # en windows (cmd.exe)
+	$ .\kazaa-fs.exe --help
 	...
 	$ # en linux
-	$ ./linux/main <kazaa-dir> <trash-dir> <tmp-dir> <group> <port>
+	$ ./kazaa --help
 	...
-	...
-	$ # compilar en la carpeta dist
-	$ make dstdir=dist
 
 
 ¿qué hace?
