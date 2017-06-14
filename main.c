@@ -23,6 +23,14 @@ int main(int argc, char **argv)
 	pthread_t thread_fs;
 
 
+#ifdef _WIN32
+	if (NULL != getenv("MSYSTEM") || NULL != getenv("CYGWIN")) {
+		setvbuf(stdout, 0, _IONBF, 0);
+		setvbuf(stderr, 0, _IONBF, 0);
+	}
+#endif
+
+
 	fs = calloc(1, sizeof(*fs));
 	if (NULL == fs) {
 		perror("calloc");
