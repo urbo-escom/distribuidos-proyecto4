@@ -161,8 +161,11 @@ void* recv_thread(void *param)
 		socket_addr_get_port(fs->self_addr, &sport);
 		fprintf(stderr,
 			"RECV [%s:%d] <- [%s:%d] recv %d bytes "
+			"(op, type) = (0x%x, 0x%x) "
 			"(id, key) = (0x%x, 0x%x)\n",
-			shost, sport, phost, pport, s, m->id, m->key);
+			shost, sport, phost, pport, s,
+			m->opcode, m->type,
+			m->id, m->key);
 
 		process_message(fs, m, phost, pport);
 	}
